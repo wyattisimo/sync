@@ -8,3 +8,5 @@ sync
 ====
 
 Extensions to the golang sync package.
+
+See the [documentation](http://godoc.org/github.com/joshlf13/sync).
