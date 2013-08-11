@@ -31,7 +31,7 @@ func (m *Mutex) Lock() {
 	}
 }
 
-// Lock if possible checks the current status of m.
+// LockIfPossible checks the current status of m.
 // If m is currently unlocked, it locks m, and returns
 // true, otherwise it returns false.
 func (m *Mutex) LockIfPossible() bool {
