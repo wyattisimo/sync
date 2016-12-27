@@ -59,7 +59,7 @@ func (m *Mutex) Locked() bool {
 func (m *Mutex) Unlock() {
 	m.mutex.Lock()
 	if !m.locked {
-		panic("sync: unlock of locked mutex")
+		panic("sync: unlock of unlocked mutex")
 	}
 	m.locked = false
 	m.mutex.Unlock()
