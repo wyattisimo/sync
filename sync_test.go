@@ -7,6 +7,7 @@ package sync
 import (
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestLock(t *testing.T) {
@@ -45,6 +46,63 @@ func TestLockIfPossible(t *testing.T) {
 	if m.LockIfPossible() {
 		t.Error("LockIfPossible() succeeded to lock locked mutex")
 	}
+}
+
+func TestLockOrPanic_ShouldLock(t *testing.T) {
+	m := new(Mutex)
+	m.LockOrPanic()
+	if !m.locked {
+		t.Error("LockOrPanic() did not lock mutex")
+	}
+}
+
+func TestLockOrPanic_ShouldPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("LockOrPanic() did not panic after unable to acquire mutex lock")
+		}
+	}()
+	m := new(Mutex)
+	m.locked = true
+	m.LockOrPanic()
+}
+
+func TestLockOrPanicAfter_ShouldEventuallyLock(t *testing.T) {
+	m := new(Mutex)
+	m.locked = true
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Error("LockOrPanicAfter() did not acquire mutex lock before time expired")
+			}
+			wg.Done()
+		}()
+		m.LockOrPanicAfter(10 * time.Millisecond)
+	}()
+	time.Sleep(5 * time.Millisecond)
+	m.Unlock()
+	wg.Wait()
+}
+
+func TestLockOrPanicAfter_ShouldEventuallyPanic(t *testing.T) {
+	m := new(Mutex)
+	m.locked = true
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("LockOrPanicAfter() did not panic after time expired")
+			}
+			wg.Done()
+		}()
+		m.LockOrPanicAfter(1 * time.Millisecond)
+	}()
+	time.Sleep(5 * time.Millisecond)
+	m.Unlock()
+	wg.Wait()
 }
 
 func BenchmarkMutex(b *testing.B) {

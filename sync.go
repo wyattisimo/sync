@@ -5,7 +5,9 @@
 package sync
 
 import (
+	"fmt"
 	"sync"
+	"time"
 )
 
 // This Mutex is an extension of Go's standard sync.Mutex.
@@ -43,6 +45,35 @@ func (m *Mutex) LockIfPossible() bool {
 		m.locked = true
 		m.mutex.Unlock()
 		return true
+	}
+}
+
+// LockOrPanic locks m. If the lock is already in use, it panics.
+func (m *Mutex) LockOrPanic() {
+	if !m.LockIfPossible() {
+		panic("sync: unable to acquire mutex lock")
+	}
+}
+
+// LockOrPanicAfter locks m. If the lock is already in use,
+// it blocks until the mutex is available or timeout expires.
+// If timeout expires before the mutex is available, it panics.
+func (m *Mutex) LockOrPanicAfter(timeout time.Duration) {
+	haveLock := make(chan bool, 1)
+	go func() {
+		for {
+			if m.LockIfPossible() {
+				haveLock <- true
+				return
+			}
+		}
+	}()
+	select {
+	case <-haveLock:
+		close(haveLock)
+		return
+	case <-time.After(timeout):
+		panic(fmt.Sprintf("sync: unable to acquire mutex lock after %v", timeout))
 	}
 }
 
